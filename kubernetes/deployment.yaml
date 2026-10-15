@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azagent
+  namespace: azagent
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: azagent
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: azagent
+    spec:
+      serviceAccountName: azagent
+      automountServiceAccountToken: true
+      # give start.sh time to unregister the agent from Azure DevOps
+      terminationGracePeriodSeconds: 120
+      containers:
+      # --- Azure DevOps agent (docker CLI talks to the dind sidecar over TLS on localhost) ---
+      - name: azagent-container
+        image: setursoftware.azurecr.io/azuredevopsagent-dind:v1.0
+        imagePullPolicy: Always
+        env:
+        - name: AGENT_ALLOW_RUNASROOT
+          value: "true"
+        - name: AZP_WORK
+          value: /azp/_work
+        - name: DOCKER_HOST
+          value: tcp://localhost:2376
+        - name: DOCKER_TLS_VERIFY
+          value: "1"
+        - name: DOCKER_CERT_PATH
+          value: /certs/client
+        # Optional helm repo (added on every pod start). Credentials are optional.
+        # - name: HELM_REPO_NAME
+        #   value: myrepo
+        # - name: HELM_REPO_URL
+        #   value: http://chartmuseum.example.local/
+        envFrom:
+        - secretRef:
+            name: azdevops
+        securityContext:
+          runAsUser: 0
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "2"
+            memory: 4Gi
+        volumeMounts:
+        # same path in both containers: bind mounts of `docker run -v <workdir>` are resolved by the daemon
+        - name: work
+          mountPath: /azp/_work
+        - name: docker-certs
+          mountPath: /certs/client
+          subPath: client
+          readOnly: true
+
+      # --- Docker daemon (Docker-in-Docker). Needs privileged mode. ---
+      - name: dind
+        image: docker:dind
+        env:
+        # TLS enabled: the daemon (tcp/2376) only accepts clients with the generated client cert,
+        # so other pods cannot use it through the pod IP.
+        - name: DOCKER_TLS_CERTDIR
+          value: /certs
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "2"
+            memory: 4Gi
+        volumeMounts:
+        - name: work
+          mountPath: /azp/_work
+        - name: docker-certs
+          mountPath: /certs
+        - name: docker-storage
+          mountPath: /var/lib/docker
+
+      volumes:
+      - name: work
+        emptyDir: {}
+      - name: docker-certs
+        emptyDir: {}
+      - name: docker-storage
+        emptyDir: {}

@@ -63,6 +63,10 @@ spec:
           mountPath: /certs/client
           subPath: client
           readOnly: true
+        # registry credentials for private base images (start.sh copies it to ~/.docker/config.json)
+        - name: docker-registry-config
+          mountPath: /docker-secret
+          readOnly: true
 
       # --- Docker daemon (Docker-in-Docker). Needs privileged mode. ---
       - name: dind
@@ -96,3 +100,7 @@ spec:
         emptyDir: {}
       - name: docker-storage
         emptyDir: {}
+      - name: docker-registry-config
+        secret:
+          secretName: acr-docker-config
+          optional: true

@@ -74,7 +74,21 @@ Birkaç dakika içinde agent'lar pool'da **Online** görünür.
 
 > `rbac.yaml` agent'a tüm namespace'lerde `edit` yetkisi verir. Daha dar yetki için ClusterRoleBinding'i RoleBinding'e çevir.
 
-### 5. (Opsiyonel) Helm repo
+### 5. Private registry'den base image çekmek (ACR)
+
+`FROM <registry>.azurecr.io/...` gibi private imajları **kubelet değil, dind içindeki Docker daemon** çeker. Kubernetes'in pull yetkisi (AKS-ACR bağlantısı, `imagePullSecret`) daemon için geçerli değildir; kimlik bilgisi verilmezse build `401 Unauthorized` ile düşer.
+
+```bash
+kubectl create secret docker-registry acr-docker-config \
+  --docker-server=<registry>.azurecr.io \
+  --docker-username=<token-adı> \
+  --docker-password=<token> \
+  -n azagent
+```
+
+Secret `deployment.yaml`'da `/docker-secret`'a mount edilir ve `start.sh` bunu pod açılırken `~/.docker/config.json`'a kopyalar. Secret yoksa pod yine açılır (`optional: true`). Secret'ı değiştirdikten sonra pod'ları yeniden başlat.
+
+### 6. (Opsiyonel) Helm repo
 
 Pod her başladığında `HELM_REPO_NAME` ve `HELM_REPO_URL` env'leri varsa `helm repo add` + `helm repo update` çalışır. Env yoksa hiçbir şey yapılmaz.
 

@@ -60,10 +60,20 @@ if [ -n "${DOCKER_HOST}" ]; then
     || echo 1>&2 "warning: Docker daemon is not reachable, docker commands in jobs will fail"
 fi
 
+# Optional: pre-seed registry credentials. Private base images (FROM <acr>/...) are pulled by the
+# dind daemon, not by the kubelet, so it needs its own credentials. Mount a
+# kubernetes.io/dockerconfigjson secret at /docker-secret (see kubernetes/deployment.yaml).
+if [ -f /docker-secret/.dockerconfigjson ]; then
+  print_header "0b. Installing docker registry credentials..."
+  mkdir -p "${HOME}/.docker"
+  cp /docker-secret/.dockerconfigjson "${HOME}/.docker/config.json"
+  chmod 600 "${HOME}/.docker/config.json"
+fi
+
 # Optional: register a (private) helm repo on every container start.
 # HELM_REPO_NAME + HELM_REPO_URL are required; HELM_REPO_USERNAME / HELM_REPO_PASSWORD are optional.
 if [ -n "${HELM_REPO_NAME}" ] && [ -n "${HELM_REPO_URL}" ]; then
-  print_header "0b. Adding helm repo ${HELM_REPO_NAME}..."
+  print_header "0c. Adding helm repo ${HELM_REPO_NAME}..."
   if [ -n "${HELM_REPO_USERNAME}" ]; then
     printf '%s' "${HELM_REPO_PASSWORD}" | helm repo add "${HELM_REPO_NAME}" "${HELM_REPO_URL}" \
       --username "${HELM_REPO_USERNAME}" --password-stdin --force-update \

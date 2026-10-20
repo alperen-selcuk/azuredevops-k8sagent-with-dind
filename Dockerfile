@@ -14,6 +14,15 @@ FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION}-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# UTF-8 locale for every process in the agent (build steps, tasks, JVM).
+# Without this the locale falls back to POSIX/ASCII and Java's sun.jnu.encoding
+# becomes ANSI_X3.4-1968, so file names with non-ASCII characters (e.g. Turkish
+# "Çalışma-Masası.png") fail with java.nio.file.InvalidPathException in the
+# SonarScanner, Maven, etc. C.UTF-8 ships with glibc on jammy, no extra package needed.
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    LANGUAGE=C.UTF-8
+
 # Architecture used for kubectl / helm downloads: amd64 | arm64
 ARG K8S_ARCH=amd64
 # Leave empty to use the latest release; set to pin a version (e.g. v1.x.y / v3.x.y)
@@ -47,6 +56,9 @@ RUN apt-get update && \
 # Java is required by the SonarQube scanner tasks (also detected by the agent as the "java" capability)
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
+# Git: show non-ASCII paths as-is in logs/output instead of octal escapes ("\303\207...")
+RUN git config --system core.quotepath false
+
 # Docker CLI + buildx/compose plugins. The daemon runs in the dind sidecar (see kubernetes/deployment.yaml).
 COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=docker /usr/local/libexec/docker/cli-plugins /usr/local/libexec/docker/cli-plugins
@@ -64,6 +76,11 @@ RUN ln -s /usr/share/maven/bin/mvn /usr/local/bin/mvn
 ENV MAVEN_HOME=/usr/share/maven
 
 RUN set -eux; dotnet --version; node -v; npm -v; java -version; mvn -v; docker --version; docker buildx version
+
+# Fail the build if the JVM does not pick up UTF-8 for file names
+RUN set -eux; \
+    locale; \
+    java -XshowSettings:properties -version 2>&1 | grep -E 'sun.jnu.encoding = UTF-8'
 
 # Install powershell
 RUN wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" && \

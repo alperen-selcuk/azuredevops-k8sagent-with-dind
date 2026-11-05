@@ -47,6 +47,7 @@ RUN apt-get update && \
       libicu70 \
       build-essential \
       python3 \
+      openjdk-17-jdk-headless \
       unzip \
       wget && \
     rm -rf /var/lib/apt/lists/*
@@ -55,8 +56,10 @@ RUN apt-get update && \
 # (also detected by the agent as the "java" capability).
 COPY --from=maven /opt/java/openjdk /usr/lib/jvm/default-java
 ENV JAVA_HOME=/usr/lib/jvm/default-java
-# The Maven task's jdkVersionOption 1.21 resolves the JDK from this variable
+# The Maven task resolves the JDK selected by jdkVersionOption from these variables.
+# JDK 17 stays available for pipelines that select it; JDK 21 is the default.
 ENV JAVA_HOME_21_X64=/usr/lib/jvm/default-java
+ENV JAVA_HOME_17_X64=/usr/lib/jvm/java-1.17.0-openjdk-amd64
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Git: show non-ASCII paths as-is in logs/output instead of octal escapes ("\303\207...")
@@ -78,7 +81,7 @@ COPY --from=maven /usr/share/maven /usr/share/maven
 RUN ln -s /usr/share/maven/bin/mvn /usr/local/bin/mvn
 ENV MAVEN_HOME=/usr/share/maven
 
-RUN set -eux; dotnet --version; node -v; npm -v; java -version; mvn -v; docker --version; docker buildx version
+RUN set -eux; dotnet --version; node -v; npm -v; java -version; "${JAVA_HOME_17_X64}/bin/java" -version; "${JAVA_HOME_21_X64}/bin/java" -version; mvn -v; docker --version; docker buildx version
 
 # Fail the build if the JVM does not pick up UTF-8 for file names
 RUN set -eux; \

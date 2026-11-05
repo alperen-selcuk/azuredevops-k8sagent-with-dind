@@ -14,7 +14,7 @@ Base: `mcr.microsoft.com/dotnet/sdk:<DOTNET_SDK_VERSION>-jammy` (Ubuntu 22.04)
 |---|---|---|---|
 | .NET SDK | 8.0 | `DOTNET_SDK_VERSION` | Başka sürümler için pipeline'da `UseDotNet@2` |
 | Node.js + npm + corepack | 20 | `NODE_VERSION` | Next.js / Node projeleri |
-| JDK | 17 | - | `JAVA_HOME=/usr/lib/jvm/default-java`, SonarQube scanner için de gerekli |
+| JDK (Temurin) | 21 | - | `JAVA_HOME` ve `JAVA_HOME_21_X64` = `/usr/lib/jvm/default-java`, SonarQube scanner için de gerekli |
 | Maven | 3.9 | `MAVEN_VERSION` | `MAVEN_HOME=/usr/share/maven` |
 | Docker CLI + buildx + compose | latest | `DOCKER_TAG` | Pinlemek için `27-cli` gibi. Daemon sidecar'da |
 | kubectl | latest stable | `KUBECTL_VERSION` | Pinlemek için `v1.x.y` |

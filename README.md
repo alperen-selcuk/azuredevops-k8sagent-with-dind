@@ -17,6 +17,7 @@ Base: `mcr.microsoft.com/dotnet/sdk:<DOTNET_SDK_VERSION>-jammy` (Ubuntu 22.04)
 | JDK (Temurin) | 21 (default) | - | `JAVA_HOME` ve `JAVA_HOME_21_X64` = `/usr/lib/jvm/default-java`, SonarQube scanner için de gerekli |
 | JDK (OpenJDK) | 17 | - | `JAVA_HOME_17_X64` = `/usr/lib/jvm/java-1.17.0-openjdk-amd64`, Maven task'ında JDK 17 seçen pipeline'lar için |
 | Maven | 3.9 | `MAVEN_VERSION` | `MAVEN_HOME=/usr/share/maven` |
+| SonarScanner CLI | 8.3.1 | `SONAR_SCANNER_VERSION` | `sonar-scanner` komutu, default JDK ile çalışır |
 | Docker CLI + buildx + compose | latest | `DOCKER_TAG` | Pinlemek için `27-cli` gibi. Daemon sidecar'da |
 | kubectl | latest stable | `KUBECTL_VERSION` | Pinlemek için `v1.x.y` |
 | helm | latest | `HELM_VERSION` | Pinlemek için `v3.x.y` |
@@ -24,7 +25,7 @@ Base: `mcr.microsoft.com/dotnet/sdk:<DOTNET_SDK_VERSION>-jammy` (Ubuntu 22.04)
 | `az cli`, `powershell`, `git`, `jq`, `curl`, `unzip` | - | - | |
 | `build-essential`, `python3` | - | - | `node-gyp` gerektiren npm paketleri için |
 
-`dotnet-coverage` gibi global dotnet tool'lar için `~/.dotnet/tools` PATH'tedir. Agent açılışta `java`, `node`, `npm`, `maven`, `dotnet`, `docker` capability'lerini otomatik kaydeder.
+`dotnet-coverage` ve `dotnet-sonarscanner` global dotnet tool olarak kuruludur; `~/.dotnet/tools` PATH'tedir. Agent açılışta `java`, `node`, `npm`, `maven`, `dotnet`, `docker` capability'lerini otomatik kaydeder.
 
 ## Kurulum
 

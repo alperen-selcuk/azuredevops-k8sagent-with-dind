@@ -127,7 +127,24 @@ RUN chmod +x start.sh
 ENV HOME=/root
 ENV USER=root
 ENV AZP_WORK=/azp/_work
-# global dotnet tools (e.g. dotnet-coverage)
+# global dotnet tools
 ENV PATH="${PATH}:/root/.dotnet/tools"
+
+# Code coverage and SonarQube analysis tools used by the .NET pipelines
+RUN set -eux; \
+    dotnet tool install --global dotnet-coverage; \
+    dotnet tool install --global dotnet-sonarscanner; \
+    dotnet-coverage --version; \
+    dotnet tool list --global | grep -i dotnet-sonarscanner
+
+# SonarScanner CLI for non-.NET projects (runs on the default JDK)
+ARG SONAR_SCANNER_VERSION=8.3.1.16491
+RUN set -eux; \
+    curl -fsSLo /tmp/sonar-scanner.zip "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}.zip"; \
+    unzip -q /tmp/sonar-scanner.zip -d /tmp; \
+    mv "/tmp/sonar-scanner-${SONAR_SCANNER_VERSION}" /opt/sonar-scanner; \
+    ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner; \
+    rm /tmp/sonar-scanner.zip; \
+    sonar-scanner --version
 
 ENTRYPOINT [ "./start.sh" ]

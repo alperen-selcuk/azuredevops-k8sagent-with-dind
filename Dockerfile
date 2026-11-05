@@ -137,6 +137,18 @@ RUN set -eux; \
     dotnet-coverage --version; \
     dotnet tool list --global | grep -i dotnet-sonarscanner
 
+# Pipelines that run UseDotNet@2 (e.g. 6.0) point DOTNET_ROOT at the agent tool cache,
+# which has no .NET 8 runtime, so the ~/.dotnet/tools apphost shim fails with
+# "You must install or update .NET". This wrapper (ahead of ~/.dotnet/tools in PATH)
+# runs the tool DLL with the image's own .NET 8 muxer and leaves DOTNET_ROOT untouched
+# for the child processes (dotnet test) it starts.
+RUN set -eux; \
+    dll="$(find /root/.dotnet/tools/.store/dotnet-coverage -name dotnet-coverage.dll | sort | tail -n1)"; \
+    test -n "$dll"; \
+    printf '#!/bin/sh\nexec /usr/share/dotnet/dotnet "%s" "$@"\n' "$dll" > /usr/local/bin/dotnet-coverage; \
+    chmod +x /usr/local/bin/dotnet-coverage; \
+    DOTNET_ROOT=/nonexistent dotnet-coverage --version
+
 # SonarScanner CLI for non-.NET projects (runs on the default JDK)
 ARG SONAR_SCANNER_VERSION=8.3.1.16491
 RUN set -eux; \

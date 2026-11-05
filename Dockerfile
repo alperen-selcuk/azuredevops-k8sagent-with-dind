@@ -7,7 +7,7 @@ ARG DOCKER_TAG=cli
 
 FROM docker:${DOCKER_TAG} AS docker
 FROM node:${NODE_VERSION}-bookworm-slim AS node
-FROM maven:${MAVEN_VERSION}-eclipse-temurin-17 AS maven
+FROM maven:${MAVEN_VERSION}-eclipse-temurin-21 AS maven
 
 # Ubuntu 22.04 (jammy) based image with the .NET SDK preinstalled
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION}-jammy
@@ -47,14 +47,17 @@ RUN apt-get update && \
       libicu70 \
       build-essential \
       python3 \
-      openjdk-17-jdk-headless \
       unzip \
       wget && \
-    ln -s "$(dirname "$(dirname "$(readlink -f "$(which java)")")")" /usr/lib/jvm/default-java && \
     rm -rf /var/lib/apt/lists/*
 
-# Java is required by the SonarQube scanner tasks (also detected by the agent as the "java" capability)
+# JDK 21 (copied from the Maven image). Java is required by the SonarQube scanner tasks
+# (also detected by the agent as the "java" capability).
+COPY --from=maven /opt/java/openjdk /usr/lib/jvm/default-java
 ENV JAVA_HOME=/usr/lib/jvm/default-java
+# The Maven task's jdkVersionOption 1.21 resolves the JDK from this variable
+ENV JAVA_HOME_21_X64=/usr/lib/jvm/default-java
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Git: show non-ASCII paths as-is in logs/output instead of octal escapes ("\303\207...")
 RUN git config --system core.quotepath false

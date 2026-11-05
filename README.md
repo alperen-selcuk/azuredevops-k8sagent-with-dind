@@ -25,7 +25,7 @@ Base: `mcr.microsoft.com/dotnet/sdk:<DOTNET_SDK_VERSION>-jammy` (Ubuntu 22.04)
 | `az cli`, `powershell`, `git`, `jq`, `curl`, `unzip` | - | - | |
 | `build-essential`, `python3` | - | - | `node-gyp` gerektiren npm paketleri için |
 
-`dotnet-coverage` ve `dotnet-sonarscanner` global dotnet tool olarak kuruludur; `~/.dotnet/tools` PATH'tedir. Agent açılışta `java`, `node`, `npm`, `maven`, `dotnet`, `docker` capability'lerini otomatik kaydeder.
+`dotnet-coverage` ve `dotnet-sonarscanner` global dotnet tool olarak kuruludur; `~/.dotnet/tools` PATH'tedir. `dotnet-coverage`, `/usr/local/bin/dotnet-coverage` wrapper'ı üzerinden her zaman imajdaki .NET 8 ile çalışır; pipeline `UseDotNet@2` ile başka bir sürüm (ör. 6.0) seçse de hata vermez. Agent açılışta `java`, `node`, `npm`, `maven`, `dotnet`, `docker` capability'lerini otomatik kaydeder.
 
 ## Kurulum
 

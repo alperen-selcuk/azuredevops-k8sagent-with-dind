@@ -1,5 +1,5 @@
 # Toolchain versions (override with --build-arg)
-ARG NODE_VERSION=20
+ARG NODE_VERSION=24
 ARG MAVEN_VERSION=3.9
 ARG DOTNET_SDK_VERSION=8.0
 # Docker CLI image tag: "cli" = latest, or pin e.g. "27-cli" / "27.3.1-cli"
@@ -9,8 +9,8 @@ FROM docker:${DOCKER_TAG} AS docker
 FROM node:${NODE_VERSION}-bookworm-slim AS node
 FROM maven:${MAVEN_VERSION}-eclipse-temurin-21 AS maven
 
-# Ubuntu 22.04 (jammy) based image with the .NET SDK preinstalled
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION}-jammy
+# Ubuntu 24.04 (noble) based image with the .NET SDK preinstalled
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION}-noble
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -18,7 +18,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Without this the locale falls back to POSIX/ASCII and Java's sun.jnu.encoding
 # becomes ANSI_X3.4-1968, so file names with non-ASCII characters (e.g. Turkish
 # "Çalışma-Masası.png") fail with java.nio.file.InvalidPathException in the
-# SonarScanner, Maven, etc. C.UTF-8 ships with glibc on jammy, no extra package needed.
+# SonarScanner, Maven, etc. C.UTF-8 ships with glibc on noble, no extra package needed.
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     LANGUAGE=C.UTF-8
@@ -35,16 +35,13 @@ ENV AZP_AGENT_VERSION=${RUNNER_VERSION}
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y -qq --no-install-recommends \
-      apt-transport-https \
-      apt-utils \
       ca-certificates \
       curl \
       git \
       iputils-ping \
       jq \
       lsb-release \
-      software-properties-common \
-      libicu70 \
+      libicu74 \
       build-essential \
       python3 \
       openjdk-17-jdk-headless \
@@ -69,7 +66,7 @@ RUN git config --system core.quotepath false
 COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=docker /usr/local/libexec/docker/cli-plugins /usr/local/libexec/docker/cli-plugins
 
-# Node.js + npm (copied from the official image, glibc compatible with jammy)
+# Node.js + npm (copied from the official image, glibc compatible with noble)
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \

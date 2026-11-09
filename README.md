@@ -8,12 +8,12 @@ Kubernetes üzerinde çalışan, Azure DevOps'a otomatik kayıt olan self-hosted
 
 ## Agent image içeriği
 
-Base: `mcr.microsoft.com/dotnet/sdk:<DOTNET_SDK_VERSION>-jammy` (Ubuntu 22.04)
+Base: `mcr.microsoft.com/dotnet/sdk:<DOTNET_SDK_VERSION>-noble` (Ubuntu 24.04)
 
 | Araç | Sürüm | Build-arg | Not |
 |---|---|---|---|
 | .NET SDK | 8.0 | `DOTNET_SDK_VERSION` | Başka sürümler için pipeline'da `UseDotNet@2` |
-| Node.js + npm + corepack | 20 | `NODE_VERSION` | Next.js / Node projeleri |
+| Node.js + npm + corepack | 24 | `NODE_VERSION` | Next.js / Node projeleri |
 | JDK (Temurin) | 21 (default) | - | `JAVA_HOME` ve `JAVA_HOME_21_X64` = `/usr/lib/jvm/default-java`, SonarQube scanner için de gerekli |
 | JDK (OpenJDK) | 17 | - | `JAVA_HOME_17_X64` = `/usr/lib/jvm/java-1.17.0-openjdk-amd64`, Maven task'ında JDK 17 seçen pipeline'lar için |
 | Maven | 3.9 | `MAVEN_VERSION` | `MAVEN_HOME=/usr/share/maven` |

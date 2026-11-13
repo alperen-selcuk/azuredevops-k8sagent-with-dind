@@ -27,6 +27,8 @@ Base: `mcr.microsoft.com/dotnet/sdk:<DOTNET_SDK_VERSION>-noble` (Ubuntu 24.04)
 
 `dotnet-coverage` ve `dotnet-sonarscanner` global dotnet tool olarak kuruludur; `~/.dotnet/tools` PATH'tedir. `dotnet-coverage`, `/usr/local/bin/dotnet-coverage` wrapper'ı üzerinden her zaman imajdaki .NET 8 ile çalışır; pipeline `UseDotNet@2` ile başka bir sürüm (ör. 6.0) seçse de hata vermez. Agent açılışta `java`, `node`, `npm`, `maven`, `dotnet`, `docker` capability'lerini otomatik kaydeder.
 
+Maven, sertifika zincirini eksik gönderen (ara sertifikayı göndermeyen) artifact repolarında da çalışır: `/etc/mavenrc` Java'nın eksik ara sertifikayı sertifikadaki AIA adresinden indirmesini açar (tarayıcıların yaptığı gibi). Aksi hâlde Maven `PKIX path building failed` hatası verir. Ek bir ayar gerekmez.
+
 ## Kurulum
 
 ### 1. Agent image'ını build et ve push et
@@ -100,17 +102,6 @@ Pod her başladığında `HELM_REPO_NAME` ve `HELM_REPO_URL` env'leri varsa `hel
 | `HELM_REPO_URL` | evet | Repo URL'i |
 | `HELM_REPO_USERNAME` | hayır | Auth açıksa |
 | `HELM_REPO_PASSWORD` | hayır | Auth açıksa (Secret'tan ver) |
-
-### 7. (Opsiyonel) Kurum içi CA sertifikaları
-
-İç Maven/npm/NuGet repoları (Nexus, Artifactory vb.) public bir CA'dan değil de kurum içi bir CA'dan sertifika alıyorsa Maven `PKIX path building failed ... unable to find valid certification path` hatasıyla düşer. CA sertifikalarını (PEM, `.crt`/`.pem`) ConfigMap olarak ver:
-
-```bash
-kubectl create configmap extra-ca-certs -n azagent \
-  --from-file=root-ca.crt --from-file=intermediate-ca.crt
-```
-
-ConfigMap `/extra-ca-certs`'e mount edilir. `start.sh` pod açılırken `update-ca-certificates` çalıştırır; sertifikalar OS store'una (curl, git, dotnet) ve iki JDK'nın (21 ve 17) ortak kullandığı Java truststore'una eklenir. Node.js için `NODE_EXTRA_CA_CERTS` ayarlanır. ConfigMap yoksa hiçbir şey yapılmaz (`optional: true`). ConfigMap'i değiştirdikten sonra pod'ları yeniden başlat.
 
 ## Docker-in-Docker nasıl çalışır
 

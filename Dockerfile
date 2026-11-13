@@ -61,8 +61,7 @@ ENV JAVA_HOME_17_X64=/usr/lib/jvm/java-1.17.0-openjdk-amd64
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # One Java truststore for both JDKs: the system one (/etc/ssl/certs/java/cacerts) that
-# update-ca-certificates keeps in sync with /usr/local/share/ca-certificates. Without this
-# the Temurin JDK keeps its own bundled cacerts and ignores CAs added at runtime (start.sh).
+# update-ca-certificates keeps in sync with /usr/local/share/ca-certificates.
 # Regenerate it explicitly and fail the build if it is empty, otherwise every HTTPS call from
 # Maven ends in "PKIX path building failed".
 RUN set -eux; \
@@ -92,6 +91,13 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
 COPY --from=maven /usr/share/maven /usr/share/maven
 RUN ln -s /usr/share/maven/bin/mvn /usr/local/bin/mvn
 ENV MAVEN_HOME=/usr/share/maven
+
+# Some artifact repositories send only their own certificate, without the intermediate CA.
+# Browsers, Windows and curl download the missing intermediate from the certificate's
+# AIA (caIssuers) URL; Java does not by default and fails with "PKIX path building failed".
+# Let Maven's JVM do the same. The downloaded intermediate must still chain to a trusted root.
+# mvn sources /etc/mavenrc on every run, after MAVEN_OPTS from the Maven task is set.
+RUN printf '%s\n' 'MAVEN_OPTS="${MAVEN_OPTS} -Dcom.sun.security.enableAIAcaIssuers=true -Dcom.sun.security.allowedAIALocations=any"' > /etc/mavenrc
 
 RUN set -eux; dotnet --version; node -v; npm -v; java -version; "${JAVA_HOME_17_X64}/bin/java" -version; "${JAVA_HOME_21_X64}/bin/java" -version; mvn -v; docker --version; docker buildx version
 

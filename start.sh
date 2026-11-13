@@ -86,6 +86,23 @@ if [ -n "${HELM_REPO_NAME}" ] && [ -n "${HELM_REPO_URL}" ]; then
   fi
 fi
 
+# Optional: trust extra (internal / corporate) CAs, e.g. for a private Maven or npm repository
+# whose certificate is not issued by a public CA. Mount the PEM certificates (*.crt / *.pem) at
+# /extra-ca-certs (see kubernetes/deployment.yaml). update-ca-certificates adds them to the OS store
+# (curl, git, dotnet) and, through ca-certificates-java, to the Java truststore used by both JDKs.
+if [ -d /extra-ca-certs ] && ls /extra-ca-certs/*.crt /extra-ca-certs/*.pem >/dev/null 2>&1; then
+  print_header "0d. Installing extra CA certificates..."
+  mkdir -p /usr/local/share/ca-certificates/extra
+  for cert in /extra-ca-certs/*.crt /extra-ca-certs/*.pem; do
+    [ -f "${cert}" ] || continue
+    name="$(basename "${cert}")"
+    cp "${cert}" "/usr/local/share/ca-certificates/extra/${name%.*}.crt"
+  done
+  update-ca-certificates
+  # Node.js ships its own CA bundle; point it at the system one as well
+  export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+fi
+
 print_header "1. Determining matching Azure Pipelines agent..."
 
 # AZP_AGENT_VERSION (RUNNER_VERSION build-arg) empty -> latest, otherwise the pinned version

@@ -36,6 +36,7 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y -qq --no-install-recommends \
       ca-certificates \
+      ca-certificates-java \
       curl \
       git \
       iputils-ping \
@@ -58,6 +59,20 @@ ENV JAVA_HOME=/usr/lib/jvm/default-java
 ENV JAVA_HOME_21_X64=/usr/lib/jvm/default-java
 ENV JAVA_HOME_17_X64=/usr/lib/jvm/java-1.17.0-openjdk-amd64
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+# One Java truststore for both JDKs: the system one (/etc/ssl/certs/java/cacerts) that
+# update-ca-certificates keeps in sync with /usr/local/share/ca-certificates. Without this
+# the Temurin JDK keeps its own bundled cacerts and ignores CAs added at runtime (start.sh).
+# Regenerate it explicitly and fail the build if it is empty, otherwise every HTTPS call from
+# Maven ends in "PKIX path building failed".
+RUN set -eux; \
+    ln -sf /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"; \
+    update-ca-certificates -f; \
+    for jdk in "${JAVA_HOME_21_X64}" "${JAVA_HOME_17_X64}"; do \
+      n="$("${jdk}/bin/keytool" -list -cacerts -storepass changeit | grep -c trustedCertEntry)"; \
+      echo "${jdk}: ${n} trusted CAs"; \
+      test "${n}" -gt 100; \
+    done
 
 # Git: show non-ASCII paths as-is in logs/output instead of octal escapes ("\303\207...")
 RUN git config --system core.quotepath false

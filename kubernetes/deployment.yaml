@@ -67,6 +67,10 @@ spec:
         - name: docker-registry-config
           mountPath: /docker-secret
           readOnly: true
+        # extra CA certificates (PEM) for internal repositories; start.sh adds them to the OS and Java truststores
+        - name: extra-ca-certs
+          mountPath: /extra-ca-certs
+          readOnly: true
 
       # --- Docker daemon (Docker-in-Docker). Needs privileged mode. ---
       - name: dind
@@ -103,4 +107,9 @@ spec:
       - name: docker-registry-config
         secret:
           secretName: acr-docker-config
+          optional: true
+      # kubectl -n azagent create configmap extra-ca-certs --from-file=internal-ca.crt
+      - name: extra-ca-certs
+        configMap:
+          name: extra-ca-certs
           optional: true
